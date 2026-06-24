@@ -23,9 +23,10 @@ export default class BootScene extends Phaser.Scene {
         this.load.image(`debris_${m}_${n}`, `art/debris/${m}_${n}.png`);
       }
     }
-    // NOTE: the rat projectile is still the procedural placeholder. Drop a
-    // transparent rat PNG at public/art/characters/rat.png and ping me — I'll
-    // wire it in (display sizing differs per use, so it needs a small pass).
+    // Owner-supplied rat projectile. If present, buildRatTextures() bakes it
+    // into each rat type at the right size; otherwise it falls back to the
+    // procedural rat.
+    this.load.image("rat_custom", "art/characters/rat.png");
   }
 
   create() {

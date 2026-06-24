@@ -88,16 +88,28 @@ function drawRat(g, type, cx, cy, r) {
 }
 
 export function buildRatTextures(scene) {
+  // If an illustrated rat PNG was supplied, bake it into each rat type at the
+  // SAME native size the procedural rats used, so every place that displays a
+  // rat (held, in-flight, ammo icons, menu hero) keeps working unchanged.
+  // Types differ by size only (Tank bigger, Mouse smaller).
+  const custom = scene.textures.exists("rat_custom")
+    ? scene.textures.get("rat_custom").getSourceImage()
+    : null;
+
   for (const type of Object.values(RAT_TYPES)) {
     const r = type.radius;
-    const size = r * 3.2;
-    withGraphics(
-      scene,
-      size,
-      size,
-      (g) => drawRat(g, type, size / 2, size / 2, r),
-      "rat_" + type.key
-    );
+    const size = Math.round(r * 3.2);
+    const key = "rat_" + type.key;
+    if (custom) {
+      const canvas = document.createElement("canvas");
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(custom, 0, 0, custom.width, custom.height, 0, 0, size, size);
+      scene.textures.addCanvas(key, canvas);
+    } else {
+      withGraphics(scene, size, size, (g) => drawRat(g, type, size / 2, size / 2, r), key);
+    }
   }
 }
 
