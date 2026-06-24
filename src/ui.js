@@ -9,9 +9,11 @@ import { GAME_WIDTH, GAME_HEIGHT, GROUND_Y, COLORS } from "./constants.js";
 // to GROUND_Y. The far + ground layers are infinite tile-sprites scrolled via
 // tilePositionX so they work for any level width and pan with the camera.
 const BG_SCALE = GAME_WIDTH / 2560; // 0.5 — show the 2560-wide art at viewport width
-// Vertical offset that lands the ground layer's grass surface on GROUND_Y.
-// (Grass band starts at texture row ~1003/1440; 648 - 1003*0.5 ≈ 147.)
-const GROUND_LAYER_TOP = 147;
+// Land the near grass mat (texture row ~1022) on GROUND_Y so objects sit on it.
+const GROUND_LAYER_TOP = 137;
+// Tuck the far layer's solid band (its hard top edge, texture row ~969) down to
+// the horizon so it hides behind the near ground — only the foliage peeks up.
+const FAR_LAYER_TOP = 164;
 
 export function drawBackground(scene) {
   const W = GAME_WIDTH;
@@ -25,9 +27,10 @@ export function drawBackground(scene) {
     .setScrollFactor(0)
     .setDepth(-50);
 
-  // far foliage — slow parallax; its silhouette peeks above the horizon
+  // far foliage — slow parallax; positioned so its solid band tucks behind the
+  // near ground and only the foliage silhouette shows above the horizon
   const far = scene.add
-    .tileSprite(0, 0, W, H, "bg_far")
+    .tileSprite(0, FAR_LAYER_TOP, W, H - FAR_LAYER_TOP + 120, "bg_far")
     .setOrigin(0, 0)
     .setScrollFactor(0)
     .setDepth(-44);
