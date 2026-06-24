@@ -536,7 +536,11 @@ export default class GameScene extends Phaser.Scene {
   }
 
   endTurn() {
-    if (this.state === "ended") return;
+    // Only resolve a turn ONCE. update() calls this every frame while
+    // state === "flying" and no rats are left; without flipping state here we
+    // would re-enter for the whole 520ms delay and spawn ~30 stacked rats.
+    if (this.state !== "flying") return;
+    this.state = "resolving";
     this.cameras.main.stopFollow();
     this.tweens.add({
       targets: this.cameras.main,

@@ -59,10 +59,12 @@ export default class LeaderboardScene extends Phaser.Scene {
       dark: COLORS.panel,
     });
 
-    this.load(px, py, pw, ph);
+    // NOTE: do not name this method `load` — `this.load` is Phaser's built-in
+    // asset LoaderPlugin, and shadowing it makes this call throw.
+    this.loadScores(px, py, pw, ph);
   }
 
-  async load(px, py, pw, ph) {
+  async loadScores(px, py, pw, ph) {
     try {
       const rows = await fetchLeaderboard(20);
       this.statusText.destroy();
