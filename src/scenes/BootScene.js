@@ -9,6 +9,6 @@ export default class BootScene extends Phaser.Scene {
 
   create() {
     buildAllTextures(this);
-    this.scene.start("Menu");
+    this.scene.start("Connect");
   }
 }

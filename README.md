@@ -118,3 +118,92 @@ src/
 - **Tune feel:** `LAUNCH` (power/drag) and material HP live in `src/constants.js`.
 - **Add a rat type:** add to `RAT_TYPES` in `src/constants.js`, draw it in
   `src/textures.js`, and handle any new ability in `GameScene.tryAbility()`.
+
+---
+
+## Phase 2 — NYCPR wallet gate & leaderboard
+
+Hangry Rats is now token-gated and ships an on-chain-verified leaderboard.
+
+### Wallet gate
+
+A new **Connect** scene runs before the menu (`Boot → Connect → Menu`). To play,
+a wallet must hold at least **1,000 NYCPR** (Solana SPL token
+`EPaAwfBi4TyaqvyteW3sgL3fZvQroCNkz9AN6Yiupump`, 6 decimals → a `1_000_000_000`
+base-unit gate).
+
+- **Desktop:** uses the injected provider — Phantom (`window.phantom.solana`),
+  falling back to `window.solana` / Solflare. On connect the wallet signs a
+  one-time login message.
+- **Mobile:** plain mobile browsers have no injected wallet, so the gate shows an
+  **Open in Phantom** button that deeplinks into Phantom's in-app browser
+  (`https://phantom.app/ul/browse/<url>`), where the provider exists.
+- The balance is re-checked every session. Holding < 1,000 NYCPR shows a "you
+  need 1,000 NYCPR" screen linking to the token.
+
+All wallet logic lives in `src/wallet.js` (kept out of the Phaser scenes); the
+gate UI is `src/scenes/ConnectScene.js`. Token/gate constants are in
+`src/config.js`.
+
+### Leaderboard
+
+On a new personal best, the player is prompted **once** for a display name
+(persisted locally), and the score is signed by their wallet and submitted. A
+**🏆 RANKS** button on the menu (and a Leaderboard button on the win screen) shows
+the public top scores. Frontend API calls live in `src/api.js`.
+
+`POST /api/score` is verified server-side: the ed25519 signature is checked
+against the wallet, the signed message must embed the score plus a fresh
+timestamp (replays / messages older than ~2 min are rejected), the wallet's
+NYCPR balance is **re-verified on-chain**, the score is sanity-capped, and
+submissions are rate-limited per wallet/IP. Scores upsert as the **max per
+wallet**. `GET /api/leaderboard` returns `[{ name, score }]` only — **wallets
+are never exposed publicly.**
+
+### Admin prize list
+
+`GET /admin` is owner-only (HTTP Basic auth, or `?key=`, against `ADMIN_KEY`).
+It renders a sortable table of **name · wallet · score · updated_at** — the
+list you use to pay out prizes. Disabled if `ADMIN_KEY` is unset.
+
+### Integrity (honest limitations)
+
+This blocks **casual** cheating: playing costs real NYCPR, every score is
+signature-bound to a holding wallet, the server re-checks the balance on-chain,
+scores are capped, and submissions are rate-limited. It is **not** fully
+cheat-proof — the score is still computed in the browser, so a determined holder
+could submit an inflated score **for their own wallet**. That's why `/admin`
+exists: **review before paying out.** Full server-side replay/gameplay
+validation is out of scope.
+
+## Environment variables
+
+| Var | Where | Purpose |
+| --- | --- | --- |
+| `DATABASE_URL` | server | Postgres connection string (Railway Postgres). Unset → leaderboard API returns 503; the game still serves statically. |
+| `SOLANA_RPC_URL` | server | RPC for the server-side balance re-check. Defaults to the public mainnet RPC; a free [Helius](https://helius.dev) key is recommended for reliability. |
+| `VITE_SOLANA_RPC_URL` | build | Browser copy of the RPC URL (Vite only inlines `VITE_`-prefixed vars). Set to the same value as `SOLANA_RPC_URL`. |
+| `ADMIN_KEY` | server | Password for `/admin`. Admin disabled if unset. |
+| `PGSSL` | server | Set to `1` to force SSL (e.g. Railway's public proxy DB URL). |
+
+The token mint, decimals, and 1,000-NYCPR gate are constants in code
+(`src/config.js` + `server.js`). See `.env.example`.
+
+### Add Postgres on Railway
+
+1. In your Railway project: **New → Database → Add PostgreSQL**.
+2. On the **HangryRats** service → **Variables**, add:
+   - `DATABASE_URL = ${{Postgres.DATABASE_URL}}` (reference the DB service)
+   - `SOLANA_RPC_URL` and `VITE_SOLANA_RPC_URL` (your Helius URL or the public RPC)
+   - `ADMIN_KEY` (a strong password)
+3. Redeploy. The server auto-creates the `scores` table on boot. The deploy is
+   now **app + DB** (a small paid tier) rather than static-only.
+
+Admin URL: `https://<your-domain>/admin?key=<ADMIN_KEY>`.
+
+## Tests
+
+```bash
+npm test        # signature/replay/cap validation + SQL contract tests (pg-mem)
+npm run test:http   # boots server.js and checks routing + admin auth
+```

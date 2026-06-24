@@ -49,10 +49,18 @@ export default class MenuScene extends Phaser.Scene {
       stroke: "#1f5a1a",
     }).setDepth(25);
 
-    makeButton(this, W / 2, 512, "LEVELS", () => this.go("LevelSelect"), {
+    makeButton(this, W / 2 - 134, 512, "LEVELS", () => this.go("LevelSelect"), {
       width: 240,
       height: 70,
       fontSize: 30,
+    }).setDepth(25);
+
+    makeButton(this, W / 2 + 134, 512, "🏆 RANKS", () => this.go("Leaderboard"), {
+      width: 240,
+      height: 70,
+      fontSize: 30,
+      color: 0xe0a93c,
+      dark: 0xa9761f,
     }).setDepth(25);
 
     this.buildStarsPlaque();

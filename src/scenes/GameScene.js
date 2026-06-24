@@ -15,6 +15,7 @@ import { ensureBlockTexture } from "../textures.js";
 import { makeButton, drawStars } from "../ui.js";
 import { drawBackground } from "../ui.js";
 import { Progress } from "../progress.js";
+import { submitScore, getSubmittedHigh } from "../api.js";
 import { Sfx, unlockAudio, isMuted, setMuted } from "../sfx.js";
 
 // The launch point sits low (close to the ground) so the natural arc passes
@@ -581,6 +582,7 @@ export default class GameScene extends Phaser.Scene {
     this.score += leftover * SCORE.perRatLeft;
     const stars = this.computeStars();
     Progress.recordWin(this.levelIndex, stars, this.score, LEVEL_COUNT);
+    this.maybeSubmitScore();
     this.updateHud();
     Sfx.win();
     this.time.delayedCall(300, () => this.showResult(true, stars));
@@ -873,6 +875,20 @@ export default class GameScene extends Phaser.Scene {
     }
 
     layer.add(panel);
+
+    // Leaderboard button below the result panel (won screens only).
+    if (won) {
+      layer.add(
+        makeButton(
+          this,
+          GAME_WIDTH / 2,
+          GAME_HEIGHT / 2 + 10 + 360 / 2 + 46,
+          "\uD83C\uDFC6 Leaderboard",
+          () => this.scene.start("Leaderboard", { returnTo: "LevelSelect" }),
+          { width: 300, height: 60, fontSize: 24, color: 0xe0a93c, dark: 0xa9761f }
+        )
+      );
+    }
     panel.setScale(0.6);
     panel.setAlpha(0);
     this.tweens.add({
@@ -881,6 +897,47 @@ export default class GameScene extends Phaser.Scene {
       alpha: 1,
       duration: 360,
       ease: "Back.out",
+    });
+  }
+
+  // ----------------------------------------------------- leaderboard submit ----
+
+  // Submit the player's cumulative best score when it sets a NEW personal high.
+  // The score message is signed by the connected wallet; the server re-verifies
+  // the signature, freshness, NYCPR balance, and a sanity cap. Best-effort: any
+  // failure (declined signature, offline, gate) is swallowed so play continues.
+  async maybeSubmitScore() {
+    try {
+      let total = 0;
+      for (let i = 0; i < LEVEL_COUNT; i++) total += Progress.scoreFor(i);
+      if (total <= getSubmittedHigh()) return;
+      const res = await submitScore(total);
+      if (res && res.ok) this.toast("Score submitted to the leaderboard!");
+    } catch (e) {
+      /* non-fatal: keep playing even if submission fails */
+    }
+  }
+
+  // Tiny transient confirmation banner.
+  toast(msg) {
+    const t = this.add
+      .text(GAME_WIDTH / 2, 110, msg, {
+        fontFamily: "system-ui, sans-serif",
+        fontSize: "24px",
+        fontStyle: "800",
+        color: "#fff8e6",
+        backgroundColor: "#2f7a2acc",
+        padding: { x: 16, y: 8 },
+      })
+      .setOrigin(0.5)
+      .setScrollFactor(0)
+      .setDepth(200);
+    this.tweens.add({
+      targets: t,
+      alpha: 0,
+      delay: 2200,
+      duration: 600,
+      onComplete: () => t.destroy(),
     });
   }
 }

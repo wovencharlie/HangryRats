@@ -1,9 +1,12 @@
+import "./polyfills.js";
 import Phaser from "phaser";
 import { GAME_WIDTH, GAME_HEIGHT } from "./constants.js";
 import BootScene from "./scenes/BootScene.js";
+import ConnectScene from "./scenes/ConnectScene.js";
 import MenuScene from "./scenes/MenuScene.js";
 import LevelSelectScene from "./scenes/LevelSelectScene.js";
 import GameScene from "./scenes/GameScene.js";
+import LeaderboardScene from "./scenes/LeaderboardScene.js";
 
 const config = {
   type: Phaser.AUTO,
@@ -30,7 +33,7 @@ const config = {
       enableSleeping: false,
     },
   },
-  scene: [BootScene, MenuScene, LevelSelectScene, GameScene],
+  scene: [BootScene, ConnectScene, MenuScene, LevelSelectScene, GameScene, LeaderboardScene],
 };
 
 const game = new Phaser.Game(config);
