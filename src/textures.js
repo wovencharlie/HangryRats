@@ -276,68 +276,61 @@ export function blockTextureKey(material, w, h) {
   return `blk_${material}_${w}x${h}`;
 }
 
+// 9-slice the Kenney block box (`block_<material>`, 140x140 with a ~26px
+// border) into a crisp w×h texture, so blocks of any dimension keep their
+// bevel/border undistorted. Falls back to a flat rounded rect if the source
+// image somehow isn't loaded.
+const SRC_INSET = 26;
+
 export function ensureBlockTexture(scene, material, w, h) {
   const key = blockTextureKey(material, w, h);
+  w = Math.max(1, Math.round(w));
+  h = Math.max(1, Math.round(h));
   if (blockCache.has(key) || scene.textures.exists(key)) {
     blockCache.add(key);
     return key;
   }
-  const mat = MATERIALS[material];
-  const base = COLORS[mat.color];
-  const dark = COLORS[mat.dark];
-  withGraphics(
-    scene,
-    w,
-    h,
-    (g) => {
-      const outline = material === "glass" ? COLORS.matGlassDark : material === "stone" ? 0x4a525b : 0x6b471f;
-      // body
-      g.fillStyle(dark, 1);
-      g.fillRoundedRect(0, 0, w, h, 7);
-      g.fillStyle(base, 1);
-      g.fillRoundedRect(3, 3, w - 6, h - 6, 6);
-      // top highlight band
-      g.fillStyle(0xffffff, material === "glass" ? 0.28 : 0.14);
-      g.fillRoundedRect(5, 5, w - 10, Math.max(4, h * 0.24), 5);
-      // bottom shade
-      g.fillStyle(0x000000, 0.12);
-      g.fillRoundedRect(5, h - Math.max(5, h * 0.2), w - 10, Math.max(4, h * 0.18), 5);
 
-      if (material === "wood") {
-        g.lineStyle(2, dark, 0.55);
-        for (let x = 14; x < w - 8; x += 18) {
-          g.beginPath();
-          g.moveTo(x, 5);
-          g.lineTo(x + 2, h - 5);
-          g.strokePath();
-        }
-        // end-bolts
-        g.fillStyle(0x6b471f, 0.6);
-        g.fillCircle(9, 9, 2.4);
-        g.fillCircle(w - 9, 9, 2.4);
-        g.fillCircle(9, h - 9, 2.4);
-        g.fillCircle(w - 9, h - 9, 2.4);
-      } else if (material === "stone") {
-        g.lineStyle(2, 0x586069, 0.7);
-        g.strokeRect(7, h * 0.5, w - 14, 0.5);
-        g.fillStyle(0x586069, 0.5);
-        g.fillCircle(w * 0.3, h * 0.65, 2);
-        g.fillCircle(w * 0.7, h * 0.4, 1.6);
-        g.fillCircle(w * 0.55, h * 0.7, 1.4);
-      } else if (material === "glass") {
-        // diagonal shine streak
-        g.fillStyle(0xffffff, 0.3);
-        g.fillTriangle(w * 0.18, 4, w * 0.34, 4, w * 0.18, h - 4);
-        g.fillStyle(0xffffff, 0.18);
-        g.fillTriangle(w * 0.46, 4, w * 0.56, 4, w * 0.42, h - 4);
-      }
+  const srcKey = "block_" + material;
+  const canvas = document.createElement("canvas");
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext("2d");
 
-      // crisp outline
-      g.lineStyle(2.5, outline, 0.9);
-      g.strokeRoundedRect(1.5, 1.5, w - 3, h - 3, 6);
-    },
-    key
-  );
+  if (scene.textures.exists(srcKey)) {
+    const src = scene.textures.get(srcKey).getSourceImage();
+    const sw = src.width;
+    const sh = src.height;
+    const s = Math.min(SRC_INSET, Math.floor(sw / 2), Math.floor(sh / 2));
+    const d = Math.min(s, Math.floor(w / 2), Math.floor(h / 2));
+    const sMidW = sw - 2 * s;
+    const sMidH = sh - 2 * s;
+    const dMidW = w - 2 * d;
+    const dMidH = h - 2 * d;
+    const draw = (sx, sy, sWid, sHei, dx, dy, dWid, dHei) => {
+      if (sWid <= 0 || sHei <= 0 || dWid <= 0 || dHei <= 0) return;
+      ctx.drawImage(src, sx, sy, sWid, sHei, dx, dy, dWid, dHei);
+    };
+    // corners
+    draw(0, 0, s, s, 0, 0, d, d);
+    draw(sw - s, 0, s, s, w - d, 0, d, d);
+    draw(0, sh - s, s, s, 0, h - d, d, d);
+    draw(sw - s, sh - s, s, s, w - d, h - d, d, d);
+    // edges
+    draw(s, 0, sMidW, s, d, 0, dMidW, d);
+    draw(s, sh - s, sMidW, s, d, h - d, dMidW, d);
+    draw(0, s, s, sMidH, 0, d, d, dMidH);
+    draw(sw - s, s, s, sMidH, w - d, d, d, dMidH);
+    // center
+    draw(s, s, sMidW, sMidH, d, d, dMidW, dMidH);
+  } else {
+    // fallback: flat coloured rounded rect
+    const base = COLORS[MATERIALS[material].color];
+    ctx.fillStyle = "#" + base.toString(16).padStart(6, "0");
+    ctx.fillRect(0, 0, w, h);
+  }
+
+  scene.textures.addCanvas(key, canvas);
   blockCache.add(key);
   return key;
 }
@@ -484,7 +477,7 @@ export function buildSceneryTextures(scene) {
 
 export function buildAllTextures(scene) {
   buildRatTextures(scene);
-  buildEnemyTextures(scene);
+  // Enemy ("cat") is now a loaded image (Kenney alien), not procedural.
   buildSlingTexture(scene);
   buildPropTextures(scene);
   buildSceneryTextures(scene);

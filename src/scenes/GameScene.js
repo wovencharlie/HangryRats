@@ -144,7 +144,8 @@ export default class GameScene extends Phaser.Scene {
         frictionAir: 0.01,
         label: "enemy",
       });
-      cat.setScale(scale);
+      // size the art to the collision body (a touch larger for presence)
+      cat.setDisplaySize(r * 2.25, r * 2.25);
       cat.setDepth(6);
       cat.setData("kind", "enemy");
       cat.setData("hp", 32);
@@ -447,7 +448,8 @@ export default class GameScene extends Phaser.Scene {
     const mat = go.getData("material");
     const color =
       mat === "glass" ? COLORS.matGlass : mat === "stone" ? COLORS.matStone : COLORS.matWood;
-    this.spawnBurst(go.x, go.y, color, 9, 3);
+    this.spawnBurst(go.x, go.y, color, 5, 2.4);
+    this.spawnDebris(go.x, go.y, mat);
     if (mat === "glass") Sfx.glassBreak();
     else if (mat === "stone") Sfx.stoneBreak();
     else Sfx.woodBreak();
@@ -717,6 +719,29 @@ export default class GameScene extends Phaser.Scene {
         scale: 0,
         duration: Phaser.Math.Between(280, 520),
         ease: "Quad.out",
+        onComplete: () => p.destroy(),
+      });
+    }
+  }
+
+  // Chunky illustrated debris flung out when a block breaks (Kenney shards).
+  spawnDebris(x, y, material) {
+    for (let i = 0; i < 5; i++) {
+      const key = `debris_${material}_${1 + (i % 3)}`;
+      if (!this.textures.exists(key)) continue;
+      const p = this.add.image(x, y, key).setDepth(19);
+      p.setScale(Phaser.Math.FloatBetween(0.45, 0.85));
+      p.setAngle(Phaser.Math.Between(0, 360));
+      const ang = Phaser.Math.FloatBetween(-Math.PI, 0); // mostly upward/out
+      const dist = Phaser.Math.FloatBetween(40, 110);
+      this.tweens.add({
+        targets: p,
+        x: x + Math.cos(ang) * dist,
+        y: y + Math.sin(ang) * dist + Phaser.Math.Between(20, 70), // gravity-ish fall
+        angle: p.angle + Phaser.Math.Between(-220, 220),
+        alpha: 0,
+        duration: Phaser.Math.Between(450, 800),
+        ease: "Quad.in",
         onComplete: () => p.destroy(),
       });
     }

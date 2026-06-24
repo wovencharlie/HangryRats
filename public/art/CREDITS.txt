@@ -1,0 +1,2 @@
+Blocks, debris, and enemy art are from Kenney's Physics Assets pack (https://kenney.nl), CC0 (public domain).
+Rat character art is provided separately by the project owner.
