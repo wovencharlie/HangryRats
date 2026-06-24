@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#1a8fd6" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <title>Hangry Rats — Launch. Smash. Take Over!</title>
+    <style>
+      :root {
+        color-scheme: dark;
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        -webkit-tap-highlight-color: transparent;
+        -webkit-user-select: none;
+        user-select: none;
+        -webkit-touch-callout: none;
+      }
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: #0b1f33;
+        touch-action: none;
+        overscroll-behavior: none;
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      }
+      #game {
+        width: 100%;
+        height: 100%;
+      }
+      /* Simple loading splash shown until Phaser boots */
+      #splash {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        gap: 12px;
+        background: radial-gradient(circle at 50% 30%, #2a9fe0, #0b1f33);
+        color: #fff;
+        z-index: 10;
+        transition: opacity 0.4s ease;
+      }
+      #splash.hide {
+        opacity: 0;
+        pointer-events: none;
+      }
+      #splash h1 {
+        font-size: clamp(28px, 9vw, 64px);
+        font-weight: 900;
+        letter-spacing: 2px;
+        text-shadow: 0 4px 0 rgba(0, 0, 0, 0.25);
+      }
+      #splash .y {
+        color: #ffd23f;
+      }
+      #splash p {
+        opacity: 0.85;
+        font-size: 14px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="splash">
+      <h1><span class="y">HANGRY</span> RATS</h1>
+      <p>Loading…</p>
+    </div>
+    <div id="game"></div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
