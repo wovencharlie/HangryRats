@@ -26,6 +26,15 @@ function drawRat(g, type, cx, cy, r) {
   g.lineTo(cx - r * 1.9, cy - r * 0.4);
   g.strokePath();
 
+  // dark outline silhouette (drawn behind, so the colored fills leave a rim)
+  const OL = 0x241a13;
+  const o = r * 0.09;
+  g.fillStyle(OL, 1);
+  g.fillCircle(cx - r * 0.55, cy - r * 0.8, r * 0.45 + o);
+  g.fillCircle(cx + r * 0.55, cy - r * 0.85, r * 0.5 + o);
+  g.fillEllipse(cx + r * 0.55, cy + r * 0.2, r * 0.85 + o * 2, r * 0.6 + o * 2);
+  g.fillCircle(cx, cy, r + o);
+
   // ears
   g.fillStyle(body, 1);
   g.fillCircle(cx - r * 0.55, cy - r * 0.8, r * 0.45);
@@ -97,6 +106,13 @@ export function buildRatTextures(scene) {
 function drawCat(g, cx, cy, r, hurt) {
   const body = hurt ? 0x8a6b6b : COLORS.enemyBody;
   const belly = COLORS.enemyBelly;
+  const OL = 0x2a2330;
+  const o = r * 0.09;
+  // dark outline silhouette behind ears + head
+  g.fillStyle(OL, 1);
+  g.fillTriangle(cx - r * 0.95, cy - r * 0.42, cx - r * 0.35, cy - r * 1.38, cx - r * 0.02, cy - r * 0.62);
+  g.fillTriangle(cx + r * 0.95, cy - r * 0.42, cx + r * 0.35, cy - r * 1.38, cx + r * 0.02, cy - r * 0.62);
+  g.fillCircle(cx, cy, r + o);
   // ears (pointy)
   g.fillStyle(body, 1);
   g.fillTriangle(cx - r * 0.85, cy - r * 0.5, cx - r * 0.35, cy - r * 1.25, cx - r * 0.1, cy - r * 0.6);
@@ -274,25 +290,51 @@ export function ensureBlockTexture(scene, material, w, h) {
     w,
     h,
     (g) => {
+      const outline = material === "glass" ? COLORS.matGlassDark : material === "stone" ? 0x4a525b : 0x6b471f;
+      // body
       g.fillStyle(dark, 1);
-      g.fillRoundedRect(0, 0, w, h, 6);
+      g.fillRoundedRect(0, 0, w, h, 7);
       g.fillStyle(base, 1);
-      g.fillRoundedRect(2, 2, w - 4, h - 4, 5);
-      // highlight + texture lines depending on material
-      g.fillStyle(0xffffff, material === "glass" ? 0.18 : 0.1);
-      g.fillRoundedRect(4, 4, w - 8, Math.max(4, h * 0.22), 4);
+      g.fillRoundedRect(3, 3, w - 6, h - 6, 6);
+      // top highlight band
+      g.fillStyle(0xffffff, material === "glass" ? 0.28 : 0.14);
+      g.fillRoundedRect(5, 5, w - 10, Math.max(4, h * 0.24), 5);
+      // bottom shade
+      g.fillStyle(0x000000, 0.12);
+      g.fillRoundedRect(5, h - Math.max(5, h * 0.2), w - 10, Math.max(4, h * 0.18), 5);
+
       if (material === "wood") {
-        g.lineStyle(2, dark, 0.5);
-        for (let x = 12; x < w - 6; x += 16) {
+        g.lineStyle(2, dark, 0.55);
+        for (let x = 14; x < w - 8; x += 18) {
           g.beginPath();
-          g.moveTo(x, 4);
-          g.lineTo(x, h - 4);
+          g.moveTo(x, 5);
+          g.lineTo(x + 2, h - 5);
           g.strokePath();
         }
+        // end-bolts
+        g.fillStyle(0x6b471f, 0.6);
+        g.fillCircle(9, 9, 2.4);
+        g.fillCircle(w - 9, 9, 2.4);
+        g.fillCircle(9, h - 9, 2.4);
+        g.fillCircle(w - 9, h - 9, 2.4);
       } else if (material === "stone") {
-        g.lineStyle(2, dark, 0.6);
-        g.strokeRect(6, h / 2, w - 12, 0.5);
+        g.lineStyle(2, 0x586069, 0.7);
+        g.strokeRect(7, h * 0.5, w - 14, 0.5);
+        g.fillStyle(0x586069, 0.5);
+        g.fillCircle(w * 0.3, h * 0.65, 2);
+        g.fillCircle(w * 0.7, h * 0.4, 1.6);
+        g.fillCircle(w * 0.55, h * 0.7, 1.4);
+      } else if (material === "glass") {
+        // diagonal shine streak
+        g.fillStyle(0xffffff, 0.3);
+        g.fillTriangle(w * 0.18, 4, w * 0.34, 4, w * 0.18, h - 4);
+        g.fillStyle(0xffffff, 0.18);
+        g.fillTriangle(w * 0.46, 4, w * 0.56, 4, w * 0.42, h - 4);
       }
+
+      // crisp outline
+      g.lineStyle(2.5, outline, 0.9);
+      g.strokeRoundedRect(1.5, 1.5, w - 3, h - 3, 6);
     },
     key
   );
@@ -300,9 +342,150 @@ export function ensureBlockTexture(scene, material, w, h) {
   return key;
 }
 
+// ---- Scenery (clouds, bushes, jungle leaves) -------------------------------
+
+export function buildSceneryTextures(scene) {
+  // Fluffy cloud
+  withGraphics(
+    scene,
+    240,
+    110,
+    (g) => {
+      g.fillStyle(0xffffff, 0.95);
+      g.fillCircle(70, 70, 42);
+      g.fillCircle(120, 55, 52);
+      g.fillCircle(175, 70, 40);
+      g.fillCircle(100, 80, 46);
+      g.fillCircle(150, 82, 42);
+      g.fillStyle(0xeaf6ff, 0.9);
+      g.fillRoundedRect(40, 78, 160, 26, 13);
+    },
+    "cloud"
+  );
+
+  // Rounded leafy bush (mid/foreground decor)
+  withGraphics(
+    scene,
+    220,
+    140,
+    (g) => {
+      const blob = (x, y, r, c) => {
+        g.fillStyle(c, 1);
+        g.fillCircle(x, y, r);
+      };
+      blob(60, 90, 46, COLORS.leafDark);
+      blob(150, 95, 50, COLORS.leafDark);
+      blob(105, 70, 54, COLORS.leafDark);
+      blob(60, 84, 40, COLORS.leaf);
+      blob(150, 88, 44, COLORS.leaf);
+      blob(105, 62, 48, COLORS.leaf);
+      blob(95, 52, 30, COLORS.leafLight);
+      blob(140, 70, 24, COLORS.leafLight);
+    },
+    "bush"
+  );
+
+  // Big organic jungle leaf for framing the corners (base lower-left, tip
+  // upper-right). Built as a lanceolate shape from a spine + width profile.
+  withGraphics(
+    scene,
+    300,
+    160,
+    (g) => {
+      const base = { x: 28, y: 140 };
+      const tip = { x: 282, y: 26 };
+      const dx = tip.x - base.x;
+      const dy = tip.y - base.y;
+      const len = Math.hypot(dx, dy);
+      const ux = dx / len;
+      const uy = dy / len;
+      const px = -uy; // perpendicular
+      const py = ux;
+      const maxW = 40;
+      const N = 28;
+      const profile = (t) => Math.pow(Math.sin(Math.PI * t), 0.72) * maxW;
+
+      const drawBlade = (inset, color) => {
+        g.fillStyle(color, 1);
+        g.beginPath();
+        // top edge base->tip
+        for (let i = 0; i <= N; i++) {
+          const t = i / N;
+          const cx = base.x + dx * t;
+          const cy = base.y + dy * t;
+          const w = Math.max(0, profile(t) - inset);
+          const x = cx + px * w;
+          const y = cy + py * w;
+          i === 0 ? g.moveTo(x, y) : g.lineTo(x, y);
+        }
+        // bottom edge tip->base
+        for (let i = N; i >= 0; i--) {
+          const t = i / N;
+          const cx = base.x + dx * t;
+          const cy = base.y + dy * t;
+          const w = Math.max(0, profile(t) - inset);
+          g.lineTo(cx - px * w, cy - py * w);
+        }
+        g.closePath();
+        g.fillPath();
+      };
+
+      drawBlade(0, COLORS.leafDark);
+      drawBlade(4, COLORS.leaf);
+      drawBlade(22, COLORS.leafLight); // lighter inner glow
+
+      // midrib
+      g.lineStyle(4, COLORS.leafDark, 0.85);
+      g.beginPath();
+      g.moveTo(base.x, base.y);
+      g.lineTo(tip.x, tip.y);
+      g.strokePath();
+      // side veins
+      g.lineStyle(2, COLORS.leafDark, 0.55);
+      for (let t = 0.18; t < 0.92; t += 0.13) {
+        const cx = base.x + dx * t;
+        const cy = base.y + dy * t;
+        const w = profile(t) * 0.9;
+        for (const s of [1, -1]) {
+          g.beginPath();
+          g.moveTo(cx, cy);
+          g.lineTo(cx + px * s * w + ux * 14, cy + py * s * w + uy * 14);
+          g.strokePath();
+        }
+      }
+      // short stem
+      g.lineStyle(6, COLORS.leafDark, 1);
+      g.beginPath();
+      g.moveTo(base.x, base.y);
+      g.lineTo(base.x - 18, base.y + 16);
+      g.strokePath();
+    },
+    "leaf"
+  );
+
+  // Grass tuft for the ground edge
+  withGraphics(
+    scene,
+    60,
+    34,
+    (g) => {
+      g.fillStyle(COLORS.groundTopDark, 1);
+      for (const [x, hh] of [[10, 26], [22, 32], [34, 28], [46, 22]]) {
+        g.fillTriangle(x - 5, 34, x + 5, 34, x, 34 - hh);
+      }
+      g.fillStyle(COLORS.groundTop, 1);
+      for (const [x, hh] of [[14, 24], [28, 30], [40, 24]]) {
+        g.fillTriangle(x - 4, 34, x + 4, 34, x + 2, 34 - hh);
+      }
+    },
+    "grasstuft"
+  );
+}
+
 export function buildAllTextures(scene) {
   buildRatTextures(scene);
   buildEnemyTextures(scene);
   buildSlingTexture(scene);
   buildPropTextures(scene);
+  buildSceneryTextures(scene);
 }

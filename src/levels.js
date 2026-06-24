@@ -78,7 +78,7 @@ function L2() {
 }
 
 function L3() {
-  const h = hut(1000, { mat: "glass", roofMat: "wood", h: 130, span: 130 });
+  const h = hut(1000, { mat: "glass", roofMat: "glass", h: 130, span: 130 });
   return {
     name: "Glass House",
     hint: "Glass shatters easily — smash right through.",
@@ -126,14 +126,16 @@ function L6() {
 }
 
 function L7() {
-  const h = hut(1090, { mat: "stone", roofMat: "stone", h: 160, span: 150 });
+  // Stone columns (tough centerpiece) but a WOOD roof so the sheltered cat
+  // can be reached by smashing through the top.
+  const h = hut(1090, { mat: "stone", roofMat: "wood", h: 160, span: 150 });
   const cap = { x: 1090, y: h.roofTop - 45, w: 90, h: 90, material: "wood" }; // box on the roof
   const side = stack(1270, [box("stone", 90), box("wood", 80)]);
   return {
     name: "The Vault",
-    hint: "Stone is tough — use the Tank and aim for weak points.",
+    hint: "Stone is tough — smash the wooden roof to reach the cat inside.",
     worldWidth: 1550,
-    rats: [B, B, S, G],
+    rats: [B, B, S, G, B],
     structures: [...h.blocks, cap, ...side.blocks],
     enemies: [
       catGround(1090),

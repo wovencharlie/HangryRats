@@ -24,7 +24,10 @@ const config = {
     matter: {
       gravity: { y: 1.8 },
       // debug: true,
-      enableSleeping: true,
+      // Sleeping is OFF: a sleeping body won't wake when the block it rests on
+      // is destroyed, leaving it frozen in mid-air. The scenes are small enough
+      // that keeping everything awake is cheap.
+      enableSleeping: false,
     },
   },
   scene: [BootScene, MenuScene, LevelSelectScene, GameScene],

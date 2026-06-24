@@ -10,11 +10,26 @@ export const SLING = { x: 250, y: 470, height: 150 }; // fork anchor
 
 // Palette pulled from the concept art (jungle / sky / warm UI).
 export const COLORS = {
-  skyTop: 0x2aa3e6,
-  skyBottom: 0xa6e4ff,
-  ground: 0x6b4a2b,
-  groundTop: 0x4caf50,
-  groundTopDark: 0x3c8c40,
+  skyTop: 0x1f8ad4,
+  skyMid: 0x49b0e8,
+  skyBottom: 0xbdecff,
+  cloud: 0xffffff,
+
+  hillFar: 0x7fd08a,
+  hillMid: 0x57b06a,
+  hillNear: 0x3f9a52,
+
+  leaf: 0x2f8a3e,
+  leafLight: 0x49ad53,
+  leafDark: 0x1d5e29,
+  leafVein: 0x6fc46f,
+
+  ground: 0x7a4a26,
+  groundDark: 0x5c3719,
+  groundTop: 0x57bd4c,
+  groundTopDark: 0x3f9a3a,
+  pebble: 0x8a5a30,
+
   slingWood: 0x8a5a2b,
   slingWoodDark: 0x6b421f,
   band: 0xb3261e,
@@ -101,7 +116,7 @@ export const RAT_TYPES = {
 // Launch tuning.
 export const LAUNCH = {
   maxDrag: 135, // px the rat can be pulled back (virtual space)
-  power: 0.2, // velocity multiplier applied to drag vector
+  power: 0.235, // velocity multiplier applied to drag vector
   dashBoost: 8,
 };
 

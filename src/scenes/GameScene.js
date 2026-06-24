@@ -17,7 +17,9 @@ import { drawBackground } from "../ui.js";
 import { Progress } from "../progress.js";
 import { Sfx, unlockAudio, isMuted, setMuted } from "../sfx.js";
 
-const ANCHOR = { x: SLING.x, y: 455 };
+// The launch point sits low (close to the ground) so the natural arc passes
+// through ground-level and short structures instead of sailing over them.
+const ANCHOR = { x: SLING.x, y: 560 };
 
 export default class GameScene extends Phaser.Scene {
   constructor() {
@@ -151,13 +153,13 @@ export default class GameScene extends Phaser.Scene {
   }
 
   buildSlingshot() {
-    // back fork drawn behind the rat, front fork in front (added after rat at higher depth)
-    this.slingImg = this.add.image(SLING.x, 545, "sling").setDepth(3);
-    this.slingFront = this.add.image(SLING.x, 545, "sling").setDepth(9).setAlpha(0); // not used as image; depth handled by bands
-    this.slingFront.destroy();
+    // The fork stands on the ground; its arms reach up to ANCHOR. The texture
+    // is 170px tall with the fork arms near the top, so centering it at
+    // ANCHOR.y + 79 puts the tips at the rat.
+    this.slingImg = this.add.image(SLING.x, ANCHOR.y + 79, "sling").setScale(1.05).setDepth(3);
     // fork tip anchor points for the rubber band
-    this.tipBack = { x: SLING.x - 20, y: 470 };
-    this.tipFront = { x: SLING.x + 22, y: 466 };
+    this.tipBack = { x: SLING.x - 22, y: ANCHOR.y + 6 };
+    this.tipFront = { x: SLING.x + 24, y: ANCHOR.y + 2 };
   }
 
   // ----------------------------------------------------------------- rats ----
@@ -360,29 +362,33 @@ export default class GameScene extends Phaser.Scene {
 
   drawTrajectory(rx, ry) {
     this.trajectory.clear();
-    const dx = ANCHOR.x - rx;
-    const dy = ANCHOR.y - ry;
-    let vx = dx * LAUNCH.power;
-    let vy = dy * LAUNCH.power;
-    // Per-step values calibrated to match the live Matter integration
-    // (gravity accel ~= gravity.y * 0.42 px/step, plus frictionAir drag).
-    const g = this.matter.world.localWorld.gravity.y * 0.42;
-    const drag = 1 - 0.006;
+    let vx = (ANCHOR.x - rx) * LAUNCH.power;
+    let vy = (ANCHOR.y - ry) * LAUNCH.power;
+
+    // Replicate Matter's exact per-step Verlet integration so the preview
+    // lands where the rat actually lands. Each fixed engine step:
+    //   vx *= DRAG;  vy = vy*DRAG + GACC;  pos += v
+    // GACC = gravity.y * gravity.scale * delta^2 ; DRAG = 1 - frictionAir.
+    const grav = this.matter.world.localWorld.gravity;
+    const delta = this.matter.world.runner.delta || 1000 / 60;
+    const GACC = grav.y * (grav.scale ?? 0.001) * delta * delta;
+    const DRAG = 1 - 0.006; // rat frictionAir
+    const groundLimit = GROUND_Y - this.heldType.radius;
+
     let px = rx;
     let py = ry;
-    const stepsPerDot = 4;
-    for (let i = 0; i < 26; i++) {
+    const stepsPerDot = 3;
+    for (let i = 0; i < 34; i++) {
       for (let s = 0; s < stepsPerDot; s++) {
-        vy += g;
-        vx *= drag;
-        vy *= drag;
+        vx *= DRAG;
+        vy = vy * DRAG + GACC;
         px += vx;
         py += vy;
       }
-      if (py > GROUND_Y || px > this.worldWidth) break;
-      const a = 0.85 - i * 0.026;
+      if (py > groundLimit || px > this.worldWidth || px < 0) break;
+      const a = 0.9 - i * 0.02;
       this.trajectory.fillStyle(0xffffff, Math.max(0.18, a));
-      this.trajectory.fillCircle(px, py, Math.max(2.5, 6 - i * 0.14));
+      this.trajectory.fillCircle(px, py, Math.max(2.5, 6.5 - i * 0.11));
     }
   }
 
