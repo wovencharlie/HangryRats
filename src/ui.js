@@ -9,8 +9,9 @@ import { GAME_WIDTH, GAME_HEIGHT, GROUND_Y, COLORS } from "./constants.js";
 // to GROUND_Y. The far + ground layers are infinite tile-sprites scrolled via
 // tilePositionX so they work for any level width and pan with the camera.
 const BG_SCALE = GAME_WIDTH / 2560; // 0.5 — show the 2560-wide art at viewport width
-// Vertical offset that lands the ground layer's grass line on GROUND_Y.
-const GROUND_LAYER_TOP = 168;
+// Vertical offset that lands the ground layer's grass surface on GROUND_Y.
+// (Grass band starts at texture row ~1003/1440; 648 - 1003*0.5 ≈ 147.)
+const GROUND_LAYER_TOP = 147;
 
 export function drawBackground(scene) {
   const W = GAME_WIDTH;
