@@ -347,14 +347,27 @@ export default class GameScene extends Phaser.Scene {
   drawBand(rx, ry) {
     this.bandBack.clear();
     this.bandFront.clear();
-    const bw = 9;
-    // back strap (behind rat)
+    const bw = 10;
+    const pull = Math.hypot(rx - ANCHOR.x, ry - ANCHOR.y);
+
+    // At rest, draw a relaxed strap slung between the two fork tips (behind the
+    // rat) instead of a taut line across its face.
+    if (pull < 18) {
+      this.bandBack.lineStyle(bw, COLORS.band, 1);
+      this.bandBack.beginPath();
+      this.bandBack.moveTo(this.tipBack.x, this.tipBack.y);
+      this.bandBack.lineTo((this.tipBack.x + this.tipFront.x) / 2, ANCHOR.y + 14);
+      this.bandBack.lineTo(this.tipFront.x, this.tipFront.y);
+      this.bandBack.strokePath();
+      return;
+    }
+
+    // Pulled back: back strap behind the rat, front strap over it.
     this.bandBack.lineStyle(bw, COLORS.band, 1);
     this.bandBack.beginPath();
     this.bandBack.moveTo(this.tipBack.x, this.tipBack.y);
     this.bandBack.lineTo(rx, ry);
     this.bandBack.strokePath();
-    // front strap (over rat)
     this.bandFront.lineStyle(bw, 0x7a1a14, 1);
     this.bandFront.beginPath();
     this.bandFront.moveTo(this.tipFront.x, this.tipFront.y);

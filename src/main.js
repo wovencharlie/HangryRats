@@ -1,6 +1,15 @@
 import "./polyfills.js";
 import Phaser from "phaser";
 import { GAME_WIDTH, GAME_HEIGHT } from "./constants.js";
+
+// Render all Text at the device pixel ratio (capped at 2) so labels/titles are
+// crisp on high-DPI / Retina screens instead of being upscaled and blurry.
+const TEXT_RES = Math.min(typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1, 2);
+Phaser.GameObjects.GameObjectFactory.register("text", function (x, y, text, style) {
+  style = style || {};
+  if (style.resolution == null) style.resolution = TEXT_RES;
+  return this.displayList.add(new Phaser.GameObjects.Text(this.scene, x, y, text, style));
+});
 import BootScene from "./scenes/BootScene.js";
 import ConnectScene from "./scenes/ConnectScene.js";
 import MenuScene from "./scenes/MenuScene.js";

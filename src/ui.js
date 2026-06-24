@@ -161,6 +161,7 @@ export function makeButton(scene, x, y, label, onClick, opts = {}) {
       fontSize: `${fontSize}px`,
       fontStyle: "900",
       color: "#fff8e6",
+      resolution: 2, // render text at 2x for crisp edges on high-DPI screens
     })
     .setOrigin(0.5);
   t.setStroke(opts.stroke || "#5a3a1a", Math.max(5, fontSize * 0.2));
