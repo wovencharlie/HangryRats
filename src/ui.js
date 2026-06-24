@@ -4,116 +4,51 @@
 import Phaser from "phaser";
 import { GAME_WIDTH, GAME_HEIGHT, GROUND_Y, COLORS } from "./constants.js";
 
-// Paints a layered, parallax jungle scene: 3-stop sky, sun, clouds, rolling
-// hills, textured ground with grass tufts + bushes, and corner foliage — all
-// at negative depths so gameplay/UI draws on top. Layers use scrollFactor for
-// parallax as the camera pans in the Game scene.
-export function drawBackground(scene, withGround = true) {
+// Illustrated parallax scenery from three 2560x1440 layers: a fixed sky, a
+// far foliage layer, and a near grass/dirt ground whose grass line is aligned
+// to GROUND_Y. The far + ground layers are infinite tile-sprites scrolled via
+// tilePositionX so they work for any level width and pan with the camera.
+const BG_SCALE = GAME_WIDTH / 2560; // 0.5 — show the 2560-wide art at viewport width
+// Vertical offset that lands the ground layer's grass line on GROUND_Y.
+const GROUND_LAYER_TOP = 168;
+
+export function drawBackground(scene) {
   const W = GAME_WIDTH;
   const H = GAME_HEIGHT;
-  const lerp = (a, b, t) => {
-    const c = Phaser.Display.Color.Interpolate.ColorWithColor(
-      Phaser.Display.Color.IntegerToColor(a),
-      Phaser.Display.Color.IntegerToColor(b),
-      100,
-      t * 100
-    );
-    return Phaser.Display.Color.GetColor(c.r, c.g, c.b);
+
+  // sky — fixed full-screen backdrop
+  scene.add
+    .image(0, 0, "bg_sky")
+    .setOrigin(0, 0)
+    .setDisplaySize(W, H)
+    .setScrollFactor(0)
+    .setDepth(-50);
+
+  // far foliage — slow parallax; its silhouette peeks above the horizon
+  const far = scene.add
+    .tileSprite(0, 0, W, H, "bg_far")
+    .setOrigin(0, 0)
+    .setScrollFactor(0)
+    .setDepth(-44);
+  far.setTileScale(BG_SCALE);
+
+  // near ground (grass + dirt + treeline) — moves with the world; grass on GROUND_Y
+  const ground = scene.add
+    .tileSprite(0, GROUND_LAYER_TOP, W, H - GROUND_LAYER_TOP + 120, "bg_close")
+    .setOrigin(0, 0)
+    .setScrollFactor(0)
+    .setDepth(-2);
+  ground.setTileScale(BG_SCALE);
+
+  const cam = scene.cameras.main;
+  const onUpdate = () => {
+    far.tilePositionX = (cam.scrollX * 0.4) / BG_SCALE;
+    ground.tilePositionX = (cam.scrollX * 1.0) / BG_SCALE;
   };
+  scene.events.on("update", onUpdate);
+  scene.events.once("shutdown", () => scene.events.off("update", onUpdate));
 
-  // --- sky (3-stop gradient) ---
-  const sky = scene.add.graphics().setScrollFactor(0).setDepth(-50);
-  const bands = 48;
-  for (let i = 0; i < bands; i++) {
-    const t = i / (bands - 1);
-    const col =
-      t < 0.5
-        ? lerp(COLORS.skyTop, COLORS.skyMid, t / 0.5)
-        : lerp(COLORS.skyMid, COLORS.skyBottom, (t - 0.5) / 0.5);
-    sky.fillStyle(col, 1);
-    sky.fillRect(0, (H * i) / bands, W, H / bands + 1);
-  }
-
-  // --- sun glow ---
-  const sun = scene.add.graphics().setScrollFactor(0.1).setDepth(-48);
-  sun.fillStyle(0xfff4c2, 0.16);
-  sun.fillCircle(W * 0.74, 150, 175);
-  sun.fillStyle(0xfff7d2, 0.3);
-  sun.fillCircle(W * 0.74, 150, 110);
-  sun.fillStyle(0xfffae0, 0.55);
-  sun.fillCircle(W * 0.74, 150, 62);
-
-  // --- clouds ---
-  [
-    [170, 120, 0.95, 0.18],
-    [520, 86, 0.7, 0.22],
-    [840, 150, 1.05, 0.2],
-    [1120, 96, 0.8, 0.26],
-  ].forEach(([x, y, s, sf]) =>
-    scene.add.image(x, y, "cloud").setScale(s).setScrollFactor(sf).setDepth(-46).setAlpha(0.95)
-  );
-
-  // --- rolling hills (far + mid), drawn extra-wide for panning ---
-  const hills = (color, baseY, amp, freq, sf, depth) => {
-    const g = scene.add.graphics().setScrollFactor(sf).setDepth(depth);
-    g.fillStyle(color, 1);
-    g.beginPath();
-    g.moveTo(-600, H + 50);
-    for (let x = -600; x <= W + 3000; x += 40) {
-      g.lineTo(x, baseY + Math.sin(x * freq + baseY) * amp);
-    }
-    g.lineTo(W + 3000, H + 50);
-    g.closePath();
-    g.fillPath();
-  };
-  hills(COLORS.hillFar, GROUND_Y - 110, 46, 0.0042, 0.4, -44);
-  hills(COLORS.hillMid, GROUND_Y - 52, 36, 0.0061, 0.6, -42);
-
-  let result;
-  if (withGround) {
-    const gr = scene.add.graphics().setDepth(-2); // scrollFactor 1 -> moves with world
-    gr.fillStyle(COLORS.ground, 1);
-    gr.fillRect(-2000, GROUND_Y, W + 6000, H);
-    gr.fillStyle(COLORS.groundDark, 1);
-    gr.fillRect(-2000, GROUND_Y + 74, W + 6000, H);
-    gr.fillStyle(COLORS.groundTopDark, 1);
-    gr.fillRect(-2000, GROUND_Y, W + 6000, 18);
-    gr.fillStyle(COLORS.groundTop, 1);
-    gr.fillRect(-2000, GROUND_Y, W + 6000, 10);
-    gr.fillStyle(COLORS.pebble, 0.5);
-    for (let x = -120; x < W + 1800; x += 84) {
-      gr.fillCircle(x + ((x * 37) % 46), GROUND_Y + 32 + ((x * 13) % 38), 4);
-    }
-    result = gr;
-
-    // bushes (behind structures, mild parallax) + grass tufts on the surface
-    [-40, 380, 800, 1240, 1660, 2080].forEach((x, i) =>
-      scene.add
-        .image(x, GROUND_Y + 12, "bush")
-        .setOrigin(0.5, 1)
-        .setScale(0.75 + (i % 2) * 0.22)
-        .setScrollFactor(0.85)
-        .setDepth(-3)
-    );
-    for (let x = -100; x < W + 1900; x += 116) {
-      scene.add.image(x, GROUND_Y + 3, "grasstuft").setOrigin(0.5, 1).setDepth(-1).setAlpha(0.9);
-    }
-  } else {
-    const gr = scene.add.graphics().setScrollFactor(0).setDepth(-2);
-    gr.fillStyle(COLORS.ground, 1);
-    gr.fillRect(0, H - 46, W, 46);
-    gr.fillStyle(COLORS.groundTopDark, 1);
-    gr.fillRect(0, H - 46, W, 14);
-    gr.fillStyle(COLORS.groundTop, 1);
-    gr.fillRect(0, H - 46, W, 8);
-    result = gr;
-  }
-
-  // --- corner foliage frame (fixed) ---
-  scene.add.image(-24, -14, "leaf").setOrigin(0, 0).setScale(1.05).setFlipX(true).setScrollFactor(0).setDepth(-1);
-  scene.add.image(W + 24, -14, "leaf").setOrigin(1, 0).setScale(1.05).setScrollFactor(0).setDepth(-1);
-
-  return result;
+  return ground;
 }
 
 // A chunky, juicy tappable button. onClick fires on tap/click.

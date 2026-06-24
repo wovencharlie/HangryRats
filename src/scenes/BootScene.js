@@ -10,6 +10,10 @@ export default class BootScene extends Phaser.Scene {
   }
 
   preload() {
+    // parallax scenery layers (2560x1440 each)
+    this.load.image("bg_sky", "art/bg/sky.png");
+    this.load.image("bg_far", "art/bg/hills_far.png");
+    this.load.image("bg_close", "art/bg/hills_close.png");
     // 9-slice source boxes for destructible blocks
     this.load.image("block_wood", "art/blocks/wood.png");
     this.load.image("block_stone", "art/blocks/stone.png");
